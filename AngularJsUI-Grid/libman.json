@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "angular.js@1.8.3",
+      "destination": "wwwroot/lib/angular.js/"
+    },
+    {
+      "library": "angular-ui-grid@4.12.4",
+      "destination": "wwwroot/lib/angular-ui-grid/"
+    },
+    {
+      "library": "angular-ui-bootstrap@2.5.6",
+      "destination": "wwwroot/lib/angular-ui-bootstrap/"
+    },
+    {
+      "library": "angular-animate@1.8.3",
+      "destination": "wwwroot/lib/angular-animate/"
+    },
+    {
+      "library": "pdfmake@0.2.7",
+      "destination": "wwwroot/lib/pdfmake/"
+    }
+  ]
+}

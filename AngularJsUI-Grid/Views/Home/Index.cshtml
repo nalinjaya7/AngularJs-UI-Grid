@@ -1,0 +1,230 @@
+﻿@model List<OrderModel>
+@{
+    ViewData["Title"] = "AngularJs Grid";
+}
+@{
+    await Html.RenderPartialAsync("_AngularJsGridScriptsPartial");
+}
+@{
+    var options = Enum.GetValues<OrderStatus>().Where(h => h.ToString() != "All").ToList().Select(g => new { value = (g).ToString(), label = g.ToString() });
+    var serializer = new Newtonsoft.Json.JsonSerializer();
+    var stringWriter = new System.IO.StringWriter();
+    using (var writer = new Newtonsoft.Json.JsonTextWriter(stringWriter))
+    {
+        writer.QuoteChar = '\'';   //replace double quotation using single quotation
+        writer.QuoteName = false;
+        serializer.Serialize(writer, options);
+    }
+    string OrderStatusjson = stringWriter.ToString();
+}
+
+<div class="form-horizontal" ng-app="orderApp" ng-controller="orderController">
+<script type="text/javascript">
+
+    var app = angular.module("orderApp", ["ui.grid", "ui.grid.pagination", "ui.grid.selection", "ui.grid.exporter", "ui.bootstrap"]);
+
+    app.controller("orderController", function ($scope, $http, uiGridConstants, $templateCache) {
+ 
+        $scope.datePicker = {
+            options: {
+                formatMonth: 'MM',
+                startingDay: 1
+            },
+            format: "yyyy-MM-dd"
+        };
+        $scope.showDatePopup = [];
+        $scope.showDatePopup.push({ opened: false });
+        $scope.showDatePopup.push({ opened: false });
+        $templateCache.put('ui-grid/date-cell',
+            "<div class='ui-grid-cell-contents'>{{COL_FIELD | date:'yyyy-MM-dd'}}</div>"
+        );
+        $templateCache.put('ui-grid/ui-grid-date-filter',
+            "<div class=\"ui-grid-filter-container\" ng-repeat=\"colFilter in col.filters\" >" +
+            "<input type=\"text\" uib-datepicker-popup=\"{{datePicker.format}}\" " +
+            "datepicker-options=\"datePicker.options\" " +
+            "datepicker-append-to-body=\"true\" show-button-bar=\"false\"" +
+            "is-open=\"showDatePopup[$index].opened\" class=\"ui-grid-filter-input ui-grid-filter-input-{{$index}}\"" +
+            "style=\"font-size:1em; width:8em!important\" ng-model=\"colFilter.term\" ng-attr-placeholder=\"{{colFilter.placeholder || ''}}\" " +
+            " aria-label=\"{{colFilter.ariaLabel || aria.defaultFilterLabel}}\" />" +
+
+            "<span style=\"padding-left:0.3em;\"><button type=\"button\" class=\"btn btn-default btn-sm\" ng-click=\"showDatePopup[$index].opened = true\">" +
+            "<i class=\"glyphicon glyphicon-calendar\"></i></button></span>" +
+
+            "<div role=\"button\" class=\"ui-grid-filter-button\" ng-click=\"removeFilter(colFilter, $index)\" ng-if=\"!colFilter.disableCancelFilterButton\" ng-disabled=\"colFilter.term === undefined || colFilter.term === null || colFilter.term === ''\" ng-show=\"colFilter.term !== undefined && colFilter.term !== null && colFilter.term !== ''\">" +
+            "<i class=\"ui-grid-icon-cancel\" ui-grid-one-bind-aria-label=\"aria.removeFilter\">&nbsp;</i></div></div><div ng-if=\"colFilter.type === 'select'\"><select class=\"ui-grid-filter-select ui-grid-filter-input-{{$index}}\" ng-model=\"colFilter.term\" ng-attr-placeholder=\"{{colFilter.placeholder || aria.defaultFilterLabel}}\" aria-label=\"{{colFilter.ariaLabel || ''}}\" ng-options=\"option.value as option.label for option in colFilter.selectOptions\"><option value=\"\"></option></select><div role=\"button\" class=\"ui-grid-filter-button-select\" ng-click=\"removeFilter(colFilter, $index)\" ng-if=\"!colFilter.disableCancelFilterButton\" ng-disabled=\"colFilter.term === undefined || colFilter.term === null || colFilter.term === ''\" ng-show=\"colFilter.term !== undefined && colFilter.term != null\"><i class=\"ui-grid-icon-cancel\" ui-grid-one-bind-aria-label=\"aria.removeFilter\">&nbsp;</i></div></div>"
+        );
+        $scope.highlightFilteredHeader = function (row, rowRenderIndex, col, colRenderIndex) {
+            console.log(col);
+            if (col.filters[0].term) {
+                return 'header-filtered';
+            } else {
+                return '';
+            }
+        };
+        $scope.formatCurrency = function (row, grid, options) {
+            var currencySymbol = '$';
+            var currencyCode = 'USD';
+            return currencySymbol + row.entity[options.colDef.name] + ' ' + currencyCode;
+        }
+
+        $scope.orderstatus = @Html.Raw(OrderStatusjson);
+        $scope.gridOptions = {
+            enableFiltering: true,
+            enableSorting: true,
+            paginationPageSizes: [25, 50, 75],
+            paginationPageSize: 25,
+            columnDefs: [
+                {
+                    field: 'CustomerName',
+                    width: '24%',
+                    name: 'Customer Name'
+                },
+                {
+                    field: 'OrderNo',
+                    width: '15%',
+                    name: 'Order No'
+                },
+                {
+                    field: 'OrderStatusText',
+                    width: '15%',
+                    name: 'Order Status',
+                    filter: {
+                        type: uiGridConstants.filter.SELECT,
+                        selectOptions: $scope.orderstatus,
+                        condition: uiGridConstants.filter.STARTS_WITH
+                    }
+                },
+                {
+                        field: 'SalesDate',
+                    width: '20%',
+                    cellTooltip: true,
+                    name: 'Order Date',
+                    cellFilter: 'date:\'yyyy-MMM-dd\'',
+                    cellTemplate: 'ui-grid/date-cell',
+                    filterHeaderTemplate: 'ui-grid/ui-grid-date-filter',
+                    filters: [
+                        {
+                            condition: function (term, value, row, column) {
+                                if (!term) return true;
+                                var valueDate = new Date(value);
+                                return valueDate >= term;
+                            },
+                            placeholder: 'Greater than or equal',
+                            areaId:'salesdatefrom',
+                            name: 'salesdatefrom'
+                        },
+                        {
+                            condition: function (term, value, row, column) {
+                                if (!term) return true;
+                                var valueDate = new Date(value);
+                                return valueDate <= term;
+                            },
+                            placeholder: 'Less than or equal'
+                        }
+                    ],
+                    headerCellClass: $scope.highlightFilteredHeader
+                },
+                {
+                    field: 'Total',
+                    width: '12%', exporterPdfAlign: 'right',
+                    cellFilter: 'currencyFilter:this',
+                    cellClass: 'gridcell-text-right',
+                    filters: [
+                        {
+                            condition: uiGridConstants.filter.GREATER_THAN_OR_EQUAL,
+                            placeholder: 'greater than or equal'
+                        },
+                        {
+                            condition: uiGridConstants.filter.LESS_THAN_OR_EQUAL,
+                            placeholder: 'less than or equal'
+                        }
+                    ]
+                },
+                {
+                    field: 'Discount',
+                    width: '12%', exporterPdfAlign: 'right',
+                    cellFilter: 'currencyFilter:this',
+                    cellClass: 'gridcell-text-right',
+                    filters: [
+                        {
+                            condition: uiGridConstants.filter.GREATER_THAN_OR_EQUAL,
+                            placeholder: 'greater than or equal'
+                        },
+                        {
+                            condition: uiGridConstants.filter.LESS_THAN_OR_EQUAL,
+                            placeholder: 'less than or equal'
+                        }
+                    ]
+                } 
+            ],
+            onRegisterApi: function (gridApi) {
+                $scope.grid1Api = gridApi;
+            },
+            enableRowSelection: true,
+            enableGridMenu: true,
+            enableSelectAll: true,
+            exporterMenuPdf: true,
+            exporterMenuExcel: false,
+            exporterCsvFilename: 'Orders.csv',
+            exporterPdfDefaultStyle: {
+                fontSize: 9
+            },
+            exporterPdfTableStyle: {
+                margin: [4, 30, 30, 30]
+            },
+            exporterPdfTableHeaderStyle: {
+                fontSize: 10,
+                bold: true,
+                italics: true,
+                color: 'red'
+            },
+            exporterPdfHeader: {
+                text: "Orders",
+                style: 'headerStyle'
+            },
+            exporterPdfFooter: function (currentPage, pageCount) {
+                return {
+                    text: currentPage.toString() + ' of ' + pageCount.toString(),
+                    style: 'footerStyle'
+                };
+            },
+            exporterPdfCustomFormatter: function (docDefinition) {
+                docDefinition.styles.headerStyle = {
+                    fontSize: 22,
+                    bold: true
+                };
+                docDefinition.styles.footerStyle = {
+                    fontSize: 10,
+                    bold: true
+                };
+                return docDefinition;
+            },
+                exporterPdfOrientation: 'portrait',
+            exporterPdfPageSize: 'LETTER',
+            exporterPdfMaxGridWidth: 550,
+            exporterCsvLinkElement: angular.element(document.querySelectorAll(".custom-csv-link-location"))
+        };
+        $scope.orders = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+        $scope.gridOptions.data = $scope.orders;
+    }).filter('currencyFilter', function () {
+        let USDoller = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        });
+        return function (value, scope) {
+            return USDoller.format(value);
+        };
+    });
+
+</script>
+
+<style type="text/css">
+    .myGrid {
+        width: 100%;
+        height: 555px;
+    }
+</style>
+
+<div ui-grid="gridOptions" ui-grid-pagination ui-grid-auto-resize ui-grid-selection ui-grid-exporter class="myGrid"></div>
+
+</div>
