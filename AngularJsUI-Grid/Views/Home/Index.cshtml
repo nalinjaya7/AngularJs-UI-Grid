@@ -1,26 +1,11 @@
 ﻿@model List<OrderModel>
 @{
-    ViewData["Title"] = "AngularJs Grid";
-}
-@{
+    ViewData["Title"] = "AngularJs Grid"; 
     await Html.RenderPartialAsync("_AngularJsGridScriptsPartial");
-}
-@{
-    var options = Enum.GetValues<OrderStatus>().Where(h => h.ToString() != "All").ToList().Select(g => new { value = (g).ToString(), label = g.ToString() });
-    var serializer = new Newtonsoft.Json.JsonSerializer();
-    var stringWriter = new System.IO.StringWriter();
-    using (var writer = new Newtonsoft.Json.JsonTextWriter(stringWriter))
-    {
-        writer.QuoteChar = '\'';   //replace double quotation using single quotation
-        writer.QuoteName = false;
-        serializer.Serialize(writer, options);
-    }
-    string OrderStatusjson = stringWriter.ToString();
 }
 
 <div class="form-horizontal" ng-app="orderApp" ng-controller="orderController">
 <script type="text/javascript">
-
     var app = angular.module("orderApp", ["ui.grid", "ui.grid.pagination", "ui.grid.selection", "ui.grid.exporter", "ui.bootstrap"]);
 
     app.controller("orderController", function ($scope, $http, uiGridConstants, $templateCache) {
@@ -67,7 +52,7 @@
             return currencySymbol + row.entity[options.colDef.name] + ' ' + currencyCode;
         }
 
-        $scope.orderstatus = @Html.Raw(OrderStatusjson);
+        $scope.orderstatus = @Html.Raw(ViewBag.OrderStatusjson);
         $scope.gridOptions = {
             enableFiltering: true,
             enableSorting: true,
