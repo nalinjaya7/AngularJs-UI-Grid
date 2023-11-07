@@ -1,19 +1,19 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace AngularJsUI_Grid
+namespace AngularJsUI_Grid.Models
 {
     public class OrderModel
-    { 
-        public OrderModel(string orderNo, string customerName,decimal total, DateTime salesDate, OrderStatus orderStatus, decimal discount)
-        { 
-            this.OrderNo = orderNo;
-            this.CustomerName = customerName; 
-            this.Total = total;
-            this.SalesDate = salesDate;
-            this.OrderStatus = orderStatus;
-            this.Discount = discount; 
-        }         
+    {
+        public OrderModel(string orderNo, string customerName, decimal total, DateTime salesDate, OrderStatus orderStatus, decimal discount)
+        {
+            OrderNo = orderNo;
+            CustomerName = customerName;
+            Total = total;
+            SalesDate = salesDate;
+            OrderStatus = orderStatus;
+            Discount = discount;
+        }
 
         [Required]
         [StringLength(50)]
@@ -36,7 +36,7 @@ namespace AngularJsUI_Grid
         [Required]
         [Column(TypeName = "Money")]
         [DisplayFormat(DataFormatString = "{0:c2}")]
-        public decimal Discount { get; set; }    
+        public decimal Discount { get; set; }
         public string OrderStatusText { get { return OrderStatus.ToString(); } }
         //public virtual CustomerModel Customer { get; set; } 
         //public virtual List<OrderDetailModel> OrderDetails { get; set; }
